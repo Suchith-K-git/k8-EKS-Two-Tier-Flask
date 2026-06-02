@@ -73,7 +73,7 @@ kubectl get pods -A
 # Delete EKS Cluster
 
 ```bash
-eksctl delete cluster --name three-tier-cluster --region us-west-2
+eksctl delete cluster --name <cluster-name> --region <region-name>
 ```
 
 This command deletes:
