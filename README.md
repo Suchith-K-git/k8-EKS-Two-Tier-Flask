@@ -1,130 +1,283 @@
- 
-# Flask App with MySQL Docker Setup
+# Amazon EKS Cluster Setup on AWS
 
-This is a simple Flask app that interacts with a MySQL database. The app allows users to submit messages, which are then stored in the database and displayed on the frontend.
+## 🚀 What is Amazon EKS?
 
-## Prerequisites
+**Amazon Elastic Kubernetes Service (EKS)** is a managed Kubernetes service provided by AWS that makes it easy to deploy, manage, and scale containerized applications using Kubernetes.
 
-Before you begin, make sure you have the following installed:
+With EKS, AWS manages the Kubernetes control plane (Master Nodes), while you manage the worker nodes and applications.
 
-- Docker
-- Git (optional, for cloning the repository)
+### Benefits of EKS
 
-## Setup
+* Fully managed Kubernetes control plane
+* High availability across multiple Availability Zones
+* Integrated with AWS IAM for security
+* Automatic Kubernetes updates and patching
+* Seamless integration with AWS services
+* Scalable and production-ready
 
-1. Clone this repository (if you haven't already):
+---
 
-   ```bash
-   git clone https://github.com/your-username/your-repo-name.git
-   ```
+# Prerequisites
 
-2. Navigate to the project directory:
+Before creating an EKS cluster, you need:
 
-   ```bash
-   cd your-repo-name
-   ```
+## 1. AWS Account
 
-3. Create a `.env` file in the project directory to store your MySQL environment variables:
+Create an AWS account if you do not already have one.
 
-   ```bash
-   touch .env
-   ```
+## 2. IAM User / Role
 
-4. Open the `.env` file and add your MySQL configuration:
+Create an IAM User or IAM Role with administrative permissions.
 
-   ```
-   MYSQL_HOST=mysql
-   MYSQL_USER=your_username
-   MYSQL_PASSWORD=your_password
-   MYSQL_DB=your_database
-   ```
+### Required Permissions
 
-## Usage
+For learning purposes, you can attach:
 
-1. Start the containers using Docker Compose:
+* AdministratorAccess
 
-   ```bash
-   docker-compose up --build
-   ```
+OR create a custom policy with permissions for:
 
-2. Access the Flask app in your web browser:
+* EKS
+* EC2
+* VPC
+* CloudFormation
+* IAM
+* Auto Scaling
 
-   - Frontend: http://localhost
-   - Backend: http://localhost:5000
-
-3. Create the `messages` table in your MySQL database:
-
-   - Use a MySQL client or tool (e.g., phpMyAdmin) to execute the following SQL commands:
-   
-     ```sql
-     CREATE TABLE messages (
-         id INT AUTO_INCREMENT PRIMARY KEY,
-         message TEXT
-     );
-     ```
-
-4. Interact with the app:
-
-   - Visit http://localhost to see the frontend. You can submit new messages using the form.
-   - Visit http://localhost:5000/insert_sql to insert a message directly into the `messages` table via an SQL query.
-
-## Cleaning Up
-
-To stop and remove the Docker containers, press `Ctrl+C` in the terminal where the containers are running, or use the following command:
+### Verify IAM Access
 
 ```bash
-docker-compose down
+aws sts get-caller-identity
 ```
 
-## To run this two-tier application using  without docker-compose
+---
 
-- First create a docker image from Dockerfile
+# Step 1: Install AWS CLI v2
+
+Download AWS CLI:
+
 ```bash
-docker build -t flaskapp .
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
 ```
 
-- Now, make sure that you have created a network using following command
+Install unzip package:
+
 ```bash
-docker network create twotier
+sudo apt update
+sudo apt install unzip -y
 ```
 
-- Attach both the containers in the same network, so that they can communicate with each other
+Extract AWS CLI package:
 
-i) MySQL container 
 ```bash
-docker run -d \
-    --name mysql \
-    -v mysql-data:/var/lib/mysql \
-    --network=twotier \
-    -e MYSQL_DATABASE=mydb \
-    -e MYSQL_ROOT_PASSWORD=admin \
-    -p 3306:3306 \
-    mysql:5.7
-
+unzip awscliv2.zip
 ```
-ii) Backend container
+
+Install AWS CLI:
+
 ```bash
-docker run -d \
-    --name flaskapp \
-    --network=twotier \
-    -e MYSQL_HOST=mysql \
-    -e MYSQL_USER=root \
-    -e MYSQL_PASSWORD=admin \
-    -e MYSQL_DB=mydb \
-    -p 5000:5000 \
-    flaskapp:latest
-
+sudo ./aws/install -i /usr/local/aws-cli -b /usr/local/bin --update
 ```
 
-## Notes
+Verify installation:
 
-- Make sure to replace placeholders (e.g., `your_username`, `your_password`, `your_database`) with your actual MySQL configuration.
-
-- This is a basic setup for demonstration purposes. In a production environment, you should follow best practices for security and performance.
-
-- Be cautious when executing SQL queries directly. Validate and sanitize user inputs to prevent vulnerabilities like SQL injection.
-
-- If you encounter issues, check Docker logs and error messages for troubleshooting.
-
+```bash
+aws --version
 ```
 
+---
+
+# Step 2: Configure AWS CLI
+
+Configure AWS credentials:
+
+```bash
+aws configure
+```
+
+Provide:
+
+```text
+AWS Access Key ID
+AWS Secret Access Key
+Default Region Name
+Default Output Format
+```
+
+Verify:
+
+```bash
+aws sts get-caller-identity
+```
+
+---
+
+# Step 3: Install kubectl
+
+Download kubectl:
+
+```bash
+curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.19.6/2021-01-05/bin/linux/amd64/kubectl
+```
+
+Make it executable:
+
+```bash
+chmod +x ./kubectl
+```
+
+Move to system path:
+
+```bash
+sudo mv ./kubectl /usr/local/bin
+```
+
+Verify installation:
+
+```bash
+kubectl version --short --client
+```
+
+---
+
+# Step 4: Install eksctl
+
+Download eksctl:
+
+```bash
+curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
+```
+
+Move binary to system path:
+
+```bash
+sudo mv /tmp/eksctl /usr/local/bin
+```
+
+Verify installation:
+
+```bash
+eksctl version
+```
+
+---
+
+# Step 5: Create an EKS Cluster
+
+Example:
+
+```bash
+eksctl create cluster \
+--name demo-cluster \
+--region ap-south-1 \
+--nodegroup-name workers \
+--node-type t3.medium \
+--nodes 2
+```
+
+This process may take 15–20 minutes.
+
+---
+
+# Step 6: Verify Cluster
+
+Check cluster information:
+
+```bash
+kubectl cluster-info
+```
+
+View nodes:
+
+```bash
+kubectl get nodes
+```
+
+View system pods:
+
+```bash
+kubectl get pods -A
+```
+
+---
+
+# Useful EKS Commands
+
+### List Clusters
+
+```bash
+eksctl get cluster
+```
+
+### Get Nodes
+
+```bash
+kubectl get nodes
+```
+
+### Get Pods
+
+```bash
+kubectl get pods -A
+```
+
+### Get Services
+
+```bash
+kubectl get svc -A
+```
+
+### Get Namespaces
+
+```bash
+kubectl get ns
+```
+
+### Delete Cluster
+
+```bash
+eksctl delete cluster --name demo-cluster --region ap-south-1
+```
+
+---
+
+# Architecture
+
+```text
+AWS Account
+     │
+     ▼
+ IAM User / Role
+     │
+     ▼
+ AWS CLI
+     │
+     ▼
+ eksctl
+     │
+     ▼
+ Amazon EKS Cluster
+     │
+     ├── Control Plane (Managed by AWS)
+     │
+     └── Worker Nodes (EC2 Instances)
+               │
+               ▼
+             Pods
+```
+
+---
+
+# Learning Outcome
+
+After completing this setup, you will be able to:
+
+* Install AWS CLI
+* Configure AWS credentials
+* Install kubectl
+* Install eksctl
+* Create an EKS Cluster
+* Manage Kubernetes workloads on AWS
+* Delete EKS clusters when no longer needed
+
+Happy Kubernetes Learning! 🚀☸️
