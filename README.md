@@ -2,9 +2,22 @@
 
 Amazon Elastic Kubernetes Service (EKS) is a managed Kubernetes service provided by AWS that allows you to run Kubernetes clusters without managing the Kubernetes control plane.
 
-## IAM Role Requirement
+## AWS Credentials Requirement
 
-Before creating an EKS cluster, create an IAM User or IAM Role with the required permissions and configure AWS credentials using `aws configure`.
+Before creating an EKS cluster, create an IAM User with the required permissions. Generate an Access Key and Secret Access Key, then configure AWS credentials using:
+
+```bash
+aws configure
+```
+
+Provide:
+
+```text
+AWS Access Key ID
+AWS Secret Access Key
+Default Region Name
+Default Output Format
+```
 
 ---
 
@@ -44,4 +57,39 @@ eksctl version
 
 ```bash
 eksctl create cluster --name three-tier-cluster --region us-west-2 --node-type t2.medium --nodes-min 2 --nodes-max 2
+```
+
+---
+
+# Verify Cluster
+
+```bash
+kubectl get nodes
+kubectl get pods -A
+```
+
+---
+
+# Delete EKS Cluster
+
+```bash
+eksctl delete cluster --name three-tier-cluster --region us-west-2
+```
+
+This command deletes:
+
+* EKS Control Plane
+* Worker Nodes
+* Node Groups
+* Auto Scaling Groups
+* Security Groups created by EKS
+* Kubernetes Resources
+* AWS Load Balancers associated with the cluster
+
+---
+
+# Verify Cluster Deletion
+
+```bash
+aws eks list-clusters
 ```
